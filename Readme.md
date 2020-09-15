@@ -27,18 +27,18 @@ Express.js is a web application framework for Node.js. [More about Express](http
 ## End Point Method
 **1. GET**
 * '/'
-     'Get All item produk'
+     >'Get All item produk'
 * '/:id'
-     'Get item by Id produk'
+    >'Get item by Id produk'
 **2. POST**
 * '/' 
-     'To Create items'
+     >'To Create items'
 **3. PUT**
 * '/:id '
-    'Update all item by id'
+    >'Update all item by id'
 **4. PATCH**
 * '/:id' 
-    'Update Partial item by id'
+    >'Update Partial item by id'
 **5. DELETE**
 * '/:id' 
-    'Delete item by id'
+    >'Delete item by id'
