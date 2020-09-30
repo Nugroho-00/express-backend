@@ -1,37 +1,37 @@
 const qs = require('querystring')
-// const db = require('../helpers/db')
-const { getIdItemModel, getItemsModel, itemsModel, createItemModel, updateItemModel, updatePartialItemModel, deleteItemModel } = require('../models/items')
+const responseStandard = require('../helpers/response')
+const {
+  getIdItemModel, getItemsModel, itemsModel, createItemModel,
+  updateItemModel, updatePartialItemModel, deleteItemModel
+} = require('../models/items')
 
 module.exports = {
-  getDetailItem: (req, res) => {
+  getItemId: (req, res) => {
     const { id } = req.params
-    getIdItemModel(id, result => {
-      if (result.length) {
-        res.send({
-          success: true,
-          message: `item with id ${id}`,
-          data: result[0]
-        })
-      } else {
-        res.send({
-          success: false,
-          message: 'Data  not found!!!'
-        })
-      }
+    getIdItemModel(id, data => {
+      return responseStandard(res, `Detail item with ${id}`, { data })
     })
   },
   createItem: (req, res) => {
-    const { name, price, description, kategoryID } = req.body
-    if (name && price && description && kategoryID) {
-      createItemModel([name, price, description, kategoryID], result => {
-        res.status(201).send({
-          success: true,
-          message: 'Item has been created',
-          data: {
-            id: result.insertId,
-            ...req.body
-          }
-        })
+    const { name, price, description, kategoryId, nameKategory } = req.body
+    console.log(req.file)
+    if (name && price && description && kategoryId && nameKategory) {
+      createItemModel([name, price, description, kategoryId, nameKategory], (err, result) => {
+        if (!err) {
+          res.status(201).send({
+            success: true,
+            message: 'Item has been created',
+            data: {
+              id: result.insertId,
+              ...req.body
+            }
+          })
+        } else {
+          res.send({
+            success: false,
+            message: 'Failed create Item'
+          })
+        }
       })
     } else {
       res.status(400).send({
@@ -58,11 +58,11 @@ module.exports = {
       sortColumn = Object.keys(sort)[0]
       sortValue = Object.values(sort)[0]
     } else {
-      sortColumn = 'price'
+      sortColumn = 'id'
       sortValue = sort || ''
     }
     if (!limit) {
-      limit = 5
+      limit = 10
     } else {
       limit = parseInt(limit)
     }
@@ -123,11 +123,11 @@ module.exports = {
   },
   updateItem: (req, res) => {
     const { id } = req.params
-    const { name, price, description, kategoryID } = req.body
-    if (name.trim() && price.trim() && description.trim() && kategoryID.trim()) {
+    const { name, price, description, kategoryId, nameKategory } = req.body
+    if (name.trim() && price.trim() && description.trim() && kategoryId.trim() && nameKategory.trim()) {
       getIdItemModel(id, result => {
         if (result.length) {
-          updateItemModel(id, [name, price, description, kategoryID], result => {
+          updateItemModel(id, [name, price, description, kategoryId, nameKategory], result => {
             if (result.affectedRows) {
               res.send({
                 success: true,
@@ -156,8 +156,8 @@ module.exports = {
   },
   updatePartialItem: (req, res) => {
     const { id } = req.params
-    const { name = '', price = '', description = '', kategoryID } = req.body
-    if (name.trim() || price.trim() || description.trim() || kategoryID.trim()) {
+    const { name = '', price = '', description = '', kategoryId = '', nameKategory = '' } = req.body
+    if (name.trim() || price.trim() || description.trim() || kategoryId.trim() || nameKategory.trim()) {
       getIdItemModel(id, result => {
         if (result.length) {
           const data = Object.entries(req.body).map(item => {
