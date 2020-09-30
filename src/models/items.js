@@ -3,7 +3,7 @@ const table = 'item'
 
 module.exports = {
   getIdItemModel: (id, cb) => {
-    db.query(`SELECT * FROM ${table} WHERE id=${id}`, (_err, result, field) => {
+    db.query(`SELECT * FROM ${table} WHERE id=${id}`, (_err, result, fields) => {
       cb(result)
     })
   },
@@ -18,12 +18,12 @@ module.exports = {
     })
   },
   createItemModel: (arr, cb) => {
-    db.query(`INSERT INTO ${table} (name, price, description, kategoryID) VALUES ('${arr[0]}', ${arr[1]},'${arr[2]}', ${arr[3]})`, (_err, result, field) => {
-      cb(result)
+    db.query(`INSERT INTO ${table} (name, price, description, kategoryID, nameKategory) VALUES ('${arr[0]}', ${arr[1]},'${arr[2]}', ${arr[3]}, '${arr[4]}')`, (err, result, field) => {
+      cb(err, result)
     })
   },
   updateItemModel: (id, arr, cb) => {
-    db.query(`UPDATE ${table} SET name = '${arr[0]}', price = ${arr[1]}, description = '${arr[2]}', kategoryID = ${arr[3]} WHERE id=${id}`, (_err, result, field) => {
+    db.query(`UPDATE ${table} SET name = '${arr[0]}', price = ${arr[1]}, description = '${arr[2]}', kategoryID = ${arr[3]}, nameKategory = '${arr[4]}'  WHERE id=${id}`, (_err, result, field) => {
       cb(result)
     })
   },
