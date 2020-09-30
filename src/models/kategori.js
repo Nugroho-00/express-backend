@@ -8,9 +8,14 @@ module.exports = {
       cb(err, result)
     })
   },
-  getCategoryModel: (cb) => {
-    db.query(`SELECT * FROM ${table}`, (err, result, field) => {
+  getCategoryModel: (searchKey, searchValue, sortColumn, sortValue, limit, offset, cb) => {
+    db.query(`SELECT * FROM ${table} WHERE ${searchKey} LIKE '%${searchValue}%' ORDER BY ${sortColumn} ${sortValue} LIMIT ${limit} OFFSET ${offset}`, (err, result, field) => {
       cb(err, result)
+    })
+  },
+  countModel: (arr, cb) => {
+    db.query(`SELECT COUNT(*) AS count FROM ${table} WHERE ${arr[0]} LIKE '%${arr[1]}%'`, (_err, data, field) => {
+      cb(data)
     })
   },
   createCategoryModel: (name, cb) => {
