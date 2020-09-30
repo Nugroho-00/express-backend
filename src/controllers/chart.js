@@ -103,18 +103,18 @@ module.exports = {
     })
   },
   createChart: (req, res) => {
-    const { userID, itemsID } = req.body
-    if (userID && itemsID) {
-      createChartModel([userID, itemsID], (err, result) => {
+    const { userId, itemId, quantity, colorId } = req.body
+    if (userId && itemId && quantity && colorId) {
+      createChartModel([userId, itemId, quantity, colorId], (err, result) => {
         if (!err) {
           res.send({
             success: true,
-            message: `chart with id ${userID} has been created`
+            message: `chart with id ${userId} has been created`
           })
         } else {
           res.send({
             success: false,
-            message: `no chart with user id ${userID}`
+            message: `no chart with user id ${userId}`
           })
         }
       })
@@ -127,8 +127,8 @@ module.exports = {
   },
   updatePartialChart: (req, res) => {
     const { id } = req.params
-    const { userID = '', itemsID = '' } = req.body
-    if (userID.trim() || itemsID.trim()) {
+    const { userId = '', itemId = '', quantity = '', colorId = '' } = req.body
+    if (userId.trim() || itemId.trim() || quantity.trim() || colorId.trim()) {
       getChartIdModel(id, result => {
         const data = Object.entries(req.body).map(item => {
           return parseInt(item[1]) > 0 ? `${item[0]}=${item[1]}` : `${item[0]}='${item[1]}'`
