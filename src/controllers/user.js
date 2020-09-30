@@ -1,10 +1,13 @@
-const { qs } = require('querystring')
-const { createUserModel, getIdUserModel, getAllUserModel, userModel, updatePartialUserModel, deleteUserModel } = require('../models/user')
+const paging = require('../helpers/pagination')
+const responseStandard = require('../helpers/response')
+const joi = require('joi')
+const bcrypt = require('bcrypt')
+const { createUserModel, getDetailUserModel, getUserModel, countUserModel, updatePartialUserModel, deleteUserModel, getUserByCondition } = require('../models/user')
 
 module.exports = {
   getUserId: (req, res) => {
     const { id } = req.params
-    getIdUserModel(id, result => {
+    getDetailUserModel(id, result => {
       if (result.length) {
         res.status(201).send({
           succes: true,
@@ -19,119 +22,56 @@ module.exports = {
       }
     })
   },
-  getAllUser: (req, res) => {
-    let { page, limit, search, sort } = req.query
-    let searchKey = ''
-    let searchValue = ''
-    let sortColumn = ''
-    let sortValue = ''
-    console.log(typeof search)
-    if (typeof search === 'object') {
-      searchKey = Object.keys(search)[0]
-      searchValue = Object.values(search)[0]
-    } else {
-      searchKey = 'userName'
-      searchValue = search || ''
-    }
-    if (typeof sort === 'object') {
-      sortColumn = Object.keys(sort)[0]
-      sortValue = Object.values(sort)[0]
-    } else {
-      sortColumn = 'id'
-      sortValue = sort || ''
-    }
-    if (!limit) {
-      limit = 5
-    } else {
-      limit = parseInt(limit)
-    }
-    if (!page) {
-      page = 1
-    } else {
-      page = parseInt(page)
-    }
-    const offset = (page - 1) * limit
-    getAllUserModel(searchKey, searchValue, sortColumn, sortValue, limit, offset, (err, result) => {
-      if (!err) {
-        const pageInfo = {
-          count: 0,
-          pages: 0,
-          currentPage: page,
-          limitPage: limit,
-          nextLink: null,
-          prevLink: null
-        }
-        if (result.length) {
-          userModel([searchKey, searchValue], data => {
-            const {
-              count
-            } = data[0]
-            pageInfo.count = count
-            pageInfo.pages = Math.ceil(count / limit)
-            const {
-              pages,
-              currentPage
-            } = pageInfo
-            if (currentPage < pages) {
-              pageInfo.nextLink = `http://localhost:8080/user?${qs.stringify({ ...req.query, ...{ page: page + 1 } })}`
-            }
-            if (currentPage > 1) {
-              pageInfo.prevLink = `http://localhost:8080/user?${qs.stringify({ ...req.query, ...{ page: page - 1 } })}`
-            }
-            res.send({
-              success: true,
-              message: 'List of User',
-              data: result,
-              pageInfo
-            })
-          })
-        } else {
-          res.send({
-            success: true,
-            message: 'There is no list User'
-          })
-        }
-      } else {
-        console.log(err)
-        res.status(500).send({
-          success: false,
-          message: 'Internal server Error'
-        })
-      }
-    })
+  getAllUser: async (req, res) => {
+    const count = await countUserModel()
+    const page = paging(req, count)
+    const { offset, pageInfo } = page
+    const { limitData: limit } = pageInfo
+    const result = await getUserModel([limit, offset])
+    return responseStandard(res, 'List of users', { result, pageInfo })
   },
-  createUser: (req, res) => {
-    const { userName, email, password } = req.body
-    if (userName && email && password) {
-      createUserModel([userName, email, password], (err, result) => {
-        if (!err) {
-          res.send({
-            success: true,
-            message: 'User has been created',
-            data: {
-              id: result.insertId,
-              ...req.body
-            }
-          })
-        } else {
-          res.send({
-            success: false,
-            message: 'Failed create User'
-          })
-        }
-      })
+  createUser: async (req, res) => {
+    const schema = joi.object({
+      rolesId: joi.string().required(),
+      name: joi.string().required(),
+      email: joi.string().required(),
+      password: joi.string().required()
+    })
+
+    let { value: result, error } = schema.validate(req.body)
+    if (error) {
+      return responseStandard(res, 'Error', { error: error.message }, 401, false)
     } else {
-      res.send({
-        success: false,
-        message: 'all field must be filled'
-      })
+      const { email } = result
+      const isExists = await getUserByCondition({ email })
+      if (isExists.length > 0) {
+        return responseStandard(res, 'Email already has been used', {}, 401, false)
+      } else {
+        const salt = await bcrypt.genSalt(10)
+        const hashedPassword = await bcrypt.hash(result.password, salt)
+        result = {
+          ...result,
+          password: hashedPassword
+        }
+        const data = await createUserModel(result)
+        if (data.affectedRows) {
+          result = {
+            id: data.insertId,
+            ...result,
+            password: undefined
+          }
+          return responseStandard(res, 'User has been created', { result })
+        } else {
+          return responseStandard(res, 'Failed to create user', {}, 401, false)
+        }
+      }
     }
   },
   updatePartialUser: (req, res) => {
     const { id } = req.params
-    const { userName = '', email = '', password = '' } = req.body
-    if (userName.trim() || email.trim() || password.trim()) {
-      getIdUserModel(id, result => {
+    const { name = '', picture = '', email = '', password = '' } = req.body
+    if (name.trim() || picture.trim() || email.trim() || password.trim()) {
+      getDetailUserModel(id, result => {
         if (result.length) {
           const data = Object.entries(req.body).map(item => {
             return parseInt(item[1]) > 0 ? `${item[0]}=${item[1]}` : `${item[0]}='${item[1]}'`
@@ -161,7 +101,7 @@ module.exports = {
   },
   deleteUser: (req, res) => {
     const { id } = req.params
-    getIdUserModel(id, result => {
+    getDetailUserModel(id, result => {
       if (result.length) {
         deleteUserModel(id, result => {
           if (result.affectedRows) {
