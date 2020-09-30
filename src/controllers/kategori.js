@@ -1,4 +1,5 @@
-const { getIdCategoryModel, getCategoryModel, createCategoryModel, updateCategoryModel, deleteCategoryModel } = require('../models/kategori')
+const qs = require('querystring')
+const { getIdCategoryModel, getCategoryModel, countModel, createCategoryModel, updateCategoryModel, deleteCategoryModel } = require('../models/kategori')
 
 module.exports = {
   getIdCategory: (req, res) => {
@@ -27,24 +28,82 @@ module.exports = {
     })
   },
   getCategory: (req, res) => {
-    getCategoryModel((err, result) => {
+    let { page, limit, search, sort } = req.query
+    let searchKey = ''
+    let searchValue = ''
+    let sortColumn = ''
+    let sortValue = ''
+    console.log(typeof search)
+    if (typeof search === 'object') {
+      searchKey = Object.keys(search)[0]
+      searchValue = Object.values(search)[0]
+    } else {
+      searchKey = 'name'
+      searchValue = search || ''
+    }
+    if (typeof sort === 'object') {
+      sortColumn = Object.keys(sort)[0]
+      sortValue = Object.values(sort)[0]
+    } else {
+      sortColumn = 'id'
+      sortValue = sort || ''
+    }
+    if (!limit) {
+      limit = 5
+    } else {
+      limit = parseInt(limit)
+    }
+    if (!page) {
+      page = 1
+    } else {
+      page = parseInt(page)
+    }
+    const offset = (page - 1) * limit
+    getCategoryModel(searchKey, searchValue, sortColumn, sortValue, limit, offset, (err, result) => {
       if (!err) {
+        const pageInfo = {
+          count: 0,
+          pages: 0,
+          currentPage: page,
+          limitPage: limit,
+          nextLink: null,
+          prevLink: null
+        }
         if (result.length) {
-          res.send({
-            success: true,
-            message: 'List of category',
-            data: result
+          countModel([searchKey, searchValue], data => {
+            const {
+              count
+            } = data[0]
+            pageInfo.count = count
+            pageInfo.pages = Math.ceil(count / limit)
+            const {
+              pages,
+              currentPage
+            } = pageInfo
+            if (currentPage < pages) {
+              pageInfo.nextLink = `http://localhost:8080/category?${qs.stringify({ ...req.query, ...{ page: page + 1 } })}`
+            }
+            if (currentPage > 1) {
+              pageInfo.prevLink = `http://localhost:8080/category?${qs.stringify({ ...req.query, ...{ page: page - 1 } })}`
+            }
+            res.send({
+              success: true,
+              message: 'List of category',
+              data: result,
+              pageInfo
+            })
           })
         } else {
           res.send({
-            success: false,
-            message: 'No list category'
+            success: true,
+            message: 'There is no list category'
           })
         }
       } else {
-        res.send({
+        console.log(err)
+        res.status(500).send({
           success: false,
-          message: 'Category not found'
+          message: 'Internal server Error'
         })
       }
     })
