@@ -1,6 +1,9 @@
 const router = require('express').Router()
 const { authAdminController, authSellerController, authCustController } = require('../controllers/auth')
 const usersController = require('../controllers/user')
+const { getItems, getDetailItem } = require('../controllers/items')
+const { getIdCategory, getCategory } = require('../controllers/kategori')
+
 // const storesController = require('../../controllers/store')
 
 const upload = require('../helpers/upload')
@@ -13,5 +16,10 @@ router.post('/login/customer', authCustController) // customer
 router.post('/register/seller', upload.single('picture'), usersController.createUser) // seller
 router.post('/register/customer', upload.single('picture'), usersController.createUser) // customer
 router.post('/register/admin', upload.single('picture'), usersController.createUser)
+
+router.get('/home', getItems)
+router.get('/home/:id', getDetailItem)
+router.get('/categori/:id', getIdCategory)
+router.get('/categori', getCategory)
 
 module.exports = router

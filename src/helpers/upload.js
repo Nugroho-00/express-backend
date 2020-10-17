@@ -1,18 +1,32 @@
 const multer = require('multer')
-
-// const options = {
-//   dest: 'assets/uploads/'
-// }
+const fs = require('fs')
+const path = require('path')
+const size = 5000
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'assets/uploads/')
+    const dir = 'assets/uploads'
+
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir)
+    }
+    cb(null, dir)
   },
   filename: (req, file, cb) => {
-    const ext = file.originalname.split('.')[file.originalname.split('.').length - 1]
-    const fileName = new Date().getTime().toString().concat('.').concat(ext)
-    cb(null, fileName)
+    cb(null, Date.now() + path.extname(file.originalname))
   }
 })
 
-module.exports = multer({ storage, limit: { flieSize: 1000000 } })
+const upload = multer({
+  storage: storage,
+  limits: size,
+  fileFilter: (req, file, cb) => {
+    if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+      req.fileValidationError = 'Only image files are allowed!'
+      return cb(null, false)
+    }
+    cb(null, true)
+  }
+})
+
+module.exports = upload

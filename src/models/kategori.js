@@ -1,6 +1,6 @@
 const db = require('../helpers/db')
 const table = 'category'
-// const table1 = 'item'
+const table1 = 'item'
 
 module.exports = {
   getIdCategoryModel: (id, cb) => {
@@ -8,13 +8,13 @@ module.exports = {
       cb(err, result)
     })
   },
-  getCategoryModel: (searchKey, searchValue, sortColumn, sortValue, limit, offset, cb) => {
-    db.query(`SELECT * FROM ${table} WHERE ${searchKey} LIKE '%${searchValue}%' ORDER BY ${sortColumn} ${sortValue} LIMIT ${limit} OFFSET ${offset}`, (err, result, field) => {
-      cb(err, result)
+  getAllCategoryModel: (arr, sort, num, cb) => {
+    db.query(`SELECT * FROM ${table} WHERE ${arr[0]} LIKE '%${arr[1]}%' ORDER BY ${sort[0]} ${sort[1]} LIMIT ${num[0]} OFFSET ${num[1]} `, (_err, result, field) => {
+      cb(_err, result)
     })
   },
-  countModel: (arr, cb) => {
-    db.query(`SELECT COUNT(*) AS count FROM ${table} WHERE ${arr[0]} LIKE '%${arr[1]}%'`, (_err, data, field) => {
+  searchCategoryModel: (search, sort, cb) => {
+    db.query(`SELECT COUNT(*) AS count FROM ${table1} WHERE ${search[0]} LIKE '%${search[1]}%' ORDER BY ${sort[0]} ${sort[1]} `, (_err, data, field) => {
       cb(data)
     })
   },

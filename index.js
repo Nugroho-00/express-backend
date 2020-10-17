@@ -25,7 +25,7 @@ const sellerRouter = require('./src/routes/seller')
 const custRouter = require('./src/routes/customer')
 
 // app.use('/home', homeRouter)
-app.use('/auth', authRouter)
+app.use('/public', authRouter)
 app.use('/admin', authAdmin, adminRouter)
 app.use('/seller', authSeller, sellerRouter)
 app.use('/customer', authCust, custRouter)

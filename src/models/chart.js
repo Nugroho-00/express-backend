@@ -9,17 +9,28 @@ module.exports = {
       cb(err, result)
     })
   },
-  getChartModel: (arr, limit, offset, cb) => {
-    db.query(`SELECT ${table1}.id, ${table2}.userName, ${table3}.name, ${table1}.quantity, ${table3}.price, ${table1}.createdAt FROM ${table1} 
-    INNER JOIN ${table2} ON ${table1}.userID = ${table2}.id
-    INNER JOIN ${table3} ON ${table1}.itemsID = ${table3}.id
-    WHERE ${arr[0]} LIKE '%${arr[1]}%' ORDER BY ${arr[2]} ${arr[3]} LIMIT ${limit} OFFSET ${offset}`, (err, result, field) => {
-      cb(err, result)
+  getChartModel: (data = []) => {
+    return new Promise((resolve, reject) => {
+      db.query(`SELECT ${table1}.id, ${table2}.name, ${table3}.name, ${table1}.quantity, ${table3}.price, ${table1}.createdAt FROM ${table1} 
+      INNER JOIN ${table2} ON ${table1}.userId = ${table2}.id
+      INNER JOIN ${table3} ON ${table1}.itemId = ${table3}.id LIMIT ? OFFSET ?`, data, (err, result, fields) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(result)
+        }
+      })
     })
   },
-  ChartModel: (arr, cb) => {
-    db.query(`SELECT COUNT(*) AS count FROM ${table1} WHERE ${arr[0]} LIKE '%${arr[1]}%'`, (_err, data, field) => {
-      cb(data)
+  countChartModel: () => {
+    return new Promise((resolve, reject) => {
+      db.query(`SELECT COUNT(*) AS count FROM ${table1}`, (err, result, _fields) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(result[0].count)
+        }
+      })
     })
   },
   getChartIdModel: (id, cb) => {

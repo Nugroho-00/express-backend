@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt')
 const { createUserModel, getDetailUserModel, getUserModel, countUserModel, updatePartialUserModel, deleteUserModel, getUserByCondition } = require('../models/user')
 
 module.exports = {
-  getUserId: (req, res) => {
+  getDetailUser: (req, res) => {
     const { id } = req.params
     getDetailUserModel(id, result => {
       if (result.length) {
@@ -33,9 +33,10 @@ module.exports = {
   createUser: async (req, res) => {
     const schema = joi.object({
       rolesId: joi.string().required(),
-      name: joi.string().required(),
+      userName: joi.string().required(),
       email: joi.string().required(),
-      password: joi.string().required()
+      password: joi.string().required(),
+      phone: joi.string()
     })
 
     let { value: result, error } = schema.validate(req.body)
@@ -69,8 +70,8 @@ module.exports = {
   },
   updatePartialUser: (req, res) => {
     const { id } = req.params
-    const { name = '', picture = '', email = '', password = '' } = req.body
-    if (name.trim() || picture.trim() || email.trim() || password.trim()) {
+    const { name = '', picture = '', email = '', password = '', phone = '' } = req.body
+    if (name.trim() || picture.trim() || email.trim() || password.trim() || phone.trim()) {
       getDetailUserModel(id, result => {
         if (result.length) {
           const data = Object.entries(req.body).map(item => {

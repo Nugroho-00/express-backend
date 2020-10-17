@@ -30,12 +30,12 @@ module.exports = {
     })
   },
   createProfileModel: (arr, cb) => {
-    db.query(`INSERT INTO ${table} (userId, name, email, phoneNumber, gender, dateOfBirth, picture) VALUES (${arr[0]}, '${arr[1]}', '${arr[2]}', ${arr[3]}, '${arr[4]}', '${arr[5]}', '${arr[6]}')`, (err, result, field) => {
+    db.query(`INSERT INTO ${table} (userId, name, email, phoneNumber, gender, dateBirth, picture) VALUES (${arr[0]}, '${arr[1]}', '${arr[2]}', ${arr[3]}, '${arr[4]}', '${arr[5]}', '${arr[6]}')`, (err, result, field) => {
       cb(err, result)
     })
   },
   updateProfileModel: (id, arr, cb) => {
-    db.query(`UPDATE ${table} SET name = '${arr[0]}', email = '${arr[1]}', phoneNumber = '${arr[2]}', gender = '${arr[3]}', dateOfBirth = '${arr[4]}', picture = '${arr[5]}'  WHERE id=${id}`, (_err, result, field) => {
+    db.query(`UPDATE ${table} SET name = '${arr[0]}', email = '${arr[1]}', phoneNumber = '${arr[2]}', gender = '${arr[3]}', dateBirth = '${arr[4]}', picture = '${arr[5]}'  WHERE id=${id}`, (_err, result, field) => {
       cb(result)
     })
   },

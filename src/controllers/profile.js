@@ -29,10 +29,10 @@ module.exports = {
     return responseStandard(res, 'List of profile', { result, pageInfo })
   },
   createProfile: (req, res) => {
-    const { userId, name, email, phoneNumber, gender, dateOfBirth } = req.body
-    const picture = `/upload/${req.file.filename}`
-    if (userId && name && email && phoneNumber && gender && picture && dateOfBirth) {
-      createProfileModel([userId, name, email, phoneNumber, gender, dateOfBirth, picture], (err, result) => {
+    const { userId, name, email, phoneNumber, gender, dateBirth } = req.body
+    const picture = `/upload/${req.file.originalname}`
+    if (userId && name && email && phoneNumber && gender && picture && dateBirth) {
+      createProfileModel([userId, name, email, phoneNumber, gender, dateBirth, picture], (err, result) => {
         if (!err) {
           res.status(201).send({
             success: true,
@@ -59,12 +59,12 @@ module.exports = {
   },
   updateProfile: (req, res) => {
     const { id } = req.params
-    const { name, email, phoneNumber, gender, dateOfBirth } = req.body
-    const picture = `/upload/${req.file.filename}`
-    if (name.trim() && email.trim() && phoneNumber.trim() && gender.trim() && dateOfBirth.trim() && picture.trim()) {
+    const { name, email, phoneNumber, gender, dateBirth } = req.body
+    const picture = `/upload/${req.file.originalname}`
+    if (name.trim() && email.trim() && phoneNumber.trim() && gender.trim() && dateBirth.trim() && picture.trim()) {
       getIdProfileModel(id, result => {
         if (result.length) {
-          updateProfileModel(id, [name, email, phoneNumber, gender, dateOfBirth, picture], result => {
+          updateProfileModel(id, [name, email, phoneNumber, gender, dateBirth, picture], result => {
             if (result.affectedRows) {
               res.send({
                 success: true,
@@ -93,9 +93,9 @@ module.exports = {
   },
   updatePartialProfile: (req, res) => {
     const { id } = req.params
-    const { name = '', email = '', phoneNumber = '', gender = '', dateOfBirth = '' } = req.body
+    const { name = '', email = '', phoneNumber = '', gender = '', dateBirth = '' } = req.body
     const picture = `/upload/${req.file.filename}`
-    if (name.trim() || email.trim() || phoneNumber.trim() || gender.trim() || dateOfBirth.trim() || picture) {
+    if (name.trim() || email.trim() || phoneNumber.trim() || gender.trim() || dateBirth.trim() || picture) {
       getIdProfileModel(id, result => {
         if (result.length) {
           const data = Object.entries(req.body).map(item => {

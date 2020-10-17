@@ -1,5 +1,6 @@
-const { qs } = require('querystring')
-const { getChartIdModel, getChartModel, ChartModel, createChartModel, updatePartialChartModel, deleteChartModel } = require('../models/chart')
+const paging = require('../helpers/pagination')
+const responseStandard = require('../helpers/response')
+const { getChartIdModel, getChartModel, countChartModel, createChartModel, updatePartialChartModel, deleteChartModel } = require('../models/chart')
 
 module.exports = {
   getChartId: (req, res) => {
@@ -26,81 +27,14 @@ module.exports = {
       }
     })
   },
-  getChart: (req, res) => {
-    let { page, limit, search, sort } = req.query
-    let sortColumn = ''
-    let sortValue = ''
-    let searchKey = ''
-    let searchValue = ''
-    if (typeof search === 'object') {
-      searchKey = Object.keys(search)[0]
-      searchValue = Object.values(search)[0]
-    } else {
-      searchKey = 'userID'
-      searchValue = search || ''
-    }
-    if (typeof sort === 'object') {
-      sortColumn = Object.keys(sort)[0]
-      sortValue = Object.values(sort)[0]
-    } else {
-      sortColumn = 'createdAt'
-      sortValue = sort || ''
-    }
-    if (!limit) {
-      limit = 5
-    } else {
-      limit = parseInt(limit)
-    }
-    if (!page) {
-      page = 1
-    } else {
-      page = parseInt(page)
-    }
-    const offset = (page - 1) * limit
-    getChartModel([searchKey, searchValue, sortColumn, sortValue], limit, offset, (err, result) => {
-      if (!err) {
-        const pageInfo = {
-          count: 0,
-          pages: 0,
-          currentPage: page,
-          LimitPerPage: limit,
-          nextLink: null,
-          prevLink: null
-        }
-        if (result.length) {
-          ChartModel([searchKey, searchValue], data => {
-            const { count } = data[0]
-            pageInfo.count = count
-            pageInfo.pages = Math.ceil(count / limit)
-
-            const { pages, currentPage } = pageInfo
-
-            if (currentPage < pages) {
-              pageInfo.nextLink = `http://localhost:8000/chart?${qs.stringify({ ...req.query, ...{ page: page + 1 } })}`
-            }
-            if (currentPage > 1) {
-              pageInfo.prevLink = `http://localhost:8000/chart?${qs.stringify({ ...req.query, ...{ page: page - 1 } })}`
-            }
-            res.send({
-              success: true,
-              message: 'List of chart',
-              data: result,
-              pageInfo
-            })
-          })
-        } else {
-          res.send({
-            success: 'false',
-            message: 'list chart not found'
-          })
-        }
-      } else {
-        res.status(500).send({
-          success: 'false',
-          message: 'internal server error!'
-        })
-      }
-    })
+  getChart: async (req, res) => {
+    const count = await countChartModel()
+    const page = paging(req, count)
+    const { offset, pageInfo } = page
+    const { limitData: limit } = pageInfo
+    const result = await getChartModel([limit, offset])
+    console.log(result)
+    return responseStandard(res, 'List of Chart', { result, pageInfo })
   },
   createChart: (req, res) => {
     const { userId, itemId, quantity, colorId } = req.body

@@ -9,6 +9,7 @@ const upload = require('../helpers/upload')
 // user detail and address
 router.post('/profile', upload.single('picture'), usersController.createProfile)
 router.get('/profile/:id', usersController.getDetailProfile) // show user detail
+router.get('/profile', usersController.getAllProfile)
 router.patch('/profile/editpart/:id', upload.single('picture'), usersController.updatePartialProfile) // edit user detail
 router.put('/profile/edit:id', upload.single('picture'), usersController.updateProfile)
 router.delete('/profile/delete/:id', usersController.deleteProfile) // delete user

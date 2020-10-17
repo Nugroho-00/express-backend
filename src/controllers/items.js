@@ -6,17 +6,16 @@ const {
 } = require('../models/items')
 
 module.exports = {
-  getItemId: (req, res) => {
+  getDetailItem: (req, res) => {
     const { id } = req.params
     getIdItemModel(id, data => {
       return responseStandard(res, `Detail item with ${id}`, { data })
     })
   },
   createItem: (req, res) => {
-    const { name, price, description, kategoryId, nameKategory } = req.body
-    console.log(req.file)
-    if (name && price && description && kategoryId && nameKategory) {
-      createItemModel([name, price, description, kategoryId, nameKategory], (err, result) => {
+    const { name, price, description, categoryId, colorId, conditionsId } = req.body
+    if (name && price && description && categoryId && colorId && conditionsId) {
+      createItemModel([name, price, description, categoryId, colorId, conditionsId], (err, result) => {
         if (!err) {
           res.status(201).send({
             success: true,
@@ -46,7 +45,6 @@ module.exports = {
     let searchValue = ''
     let sortColumn = ''
     let sortValue = ''
-    console.log(typeof search)
     if (typeof search === 'object') {
       searchKey = Object.keys(search)[0]
       searchValue = Object.values(search)[0]
@@ -58,11 +56,11 @@ module.exports = {
       sortColumn = Object.keys(sort)[0]
       sortValue = Object.values(sort)[0]
     } else {
-      sortColumn = 'id'
+      sortColumn = 'createdAt'
       sortValue = sort || ''
     }
     if (!limit) {
-      limit = 10
+      limit = 5
     } else {
       limit = parseInt(limit)
     }
@@ -94,10 +92,10 @@ module.exports = {
               currentPage
             } = pageInfo
             if (currentPage < pages) {
-              pageInfo.nextLink = `http://localhost:8080/items?${qs.stringify({ ...req.query, ...{ page: page + 1 } })}`
+              pageInfo.nextLink = `http://localhost:8000/items?${qs.stringify({ ...req.query, ...{ page: page + 1 } })}`
             }
             if (currentPage > 1) {
-              pageInfo.prevLink = `http://localhost:8080/items?${qs.stringify({ ...req.query, ...{ page: page - 1 } })}`
+              pageInfo.prevLink = `http://localhost:8000/items?${qs.stringify({ ...req.query, ...{ page: page - 1 } })}`
             }
             res.send({
               success: true,
@@ -123,11 +121,11 @@ module.exports = {
   },
   updateItem: (req, res) => {
     const { id } = req.params
-    const { name, price, description, kategoryId, nameKategory } = req.body
-    if (name.trim() && price.trim() && description.trim() && kategoryId.trim() && nameKategory.trim()) {
+    const { name, price, description, categoryId, colorId, conditionsId } = req.body
+    if (name.trim() && price.trim() && description.trim() && categoryId.trim() && colorId.trim() && conditionsId.trim()) {
       getIdItemModel(id, result => {
         if (result.length) {
-          updateItemModel(id, [name, price, description, kategoryId, nameKategory], result => {
+          updateItemModel(id, [name, price, description, categoryId, colorId, conditionsId], result => {
             if (result.affectedRows) {
               res.send({
                 success: true,
@@ -156,8 +154,8 @@ module.exports = {
   },
   updatePartialItem: (req, res) => {
     const { id } = req.params
-    const { name = '', price = '', description = '', kategoryId = '', nameKategory = '' } = req.body
-    if (name.trim() || price.trim() || description.trim() || kategoryId.trim() || nameKategory.trim()) {
+    const { name = '', price = '', description = '', categoryId = '', colorId = '', conditionsId = '' } = req.body
+    if (name.trim() || price.trim() || description.trim() || categoryId.trim() || colorId.trim() || conditionsId.trim()) {
       getIdItemModel(id, result => {
         if (result.length) {
           const data = Object.entries(req.body).map(item => {
