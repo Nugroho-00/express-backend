@@ -3,7 +3,7 @@ const tableColor = 'color'
 const tablePicture = 'image'
 const model = require('../helpers/connection')
 
-const column = 'items.id,items.name AS itemName,price,description, categories.name AS category,conditions.name AS conditions,color.name AS color,image.picture AS picture,AVG(rating.rating) AS rating, items.create_at, items.update_at'
+const column = 'items.id,items.name AS itemName,price,description, categories.name AS category,conditions.name AS conditions,color.name AS color, AVG(rating.rating) AS rating, items.create_at, items.update_at'
 const join = `LEFT JOIN conditions ON conditions.id=items.condition_id 
 LEFT JOIN categories ON categories.id=items.category_id
 LEFT JOIN color ON color.id=items.color_id
