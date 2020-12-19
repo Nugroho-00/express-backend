@@ -1,31 +1,32 @@
 const router = require('express').Router()
-const usersController = require('../controllers/user')
-const itemsController = require('../controllers/items')
-// const storesController = require('../controllers/store')
-const addressController = require('../controllers/address')
+const Users = require('../controllers/user')
+const Produk = require('../controllers/items')
+const Store = require('../controllers/store')
+const Colors = require('../controllers/color')
 const upload = require('../helpers/upload')
 
+// Items
+router.post('/post/produk', upload.array('images', 2), Produk.create)
+router.get('/Myproduk', Produk.getSellerItems)
+router.get('/items/:id', Produk.detailSellerItems)
+router.put('/items/:id', Produk.updateItems)
+router.delete('/items/:id', Produk.deleteItems)
+
 // user detail
-router.get('/detail', usersController.getDetailUser) // users
-router.put('/edit', usersController.updatePartialUser) // users and user_details
-router.delete('/delete', usersController.deleteUser) // users
-router.get('/address/:id', addressController.getDetailAddress)
-router.get('/address', addressController.getAddress)
-router.post('/address', addressController.createAddress)
-// router.put('/:id', updateAddress)
-router.patch('/address/:id', addressController.updatePartialAddress)
-router.delete('/address/:id', addressController.deleteAddress)
+router.get('/profile', Users.getDetailUser)
+router.patch('/edit/profile', Users.updateDetail)
+router.patch('/edit/picture', Users.updatePict)
+router.delete('/delete/profile', Users.deleteUser)
 
 // stores
-// router.put('/store', storesController.updateStore) // update store detail
+router.patch('/edit/My-store', Store.updateStore)
+router.get('/My-store', Store.getDetailStore)
 
-// Items
-router.post('/items', upload.array('picture', 4), itemsController.createItem) // add items
-// router.post('/items/color', upload.array('picture', 4), itemsController.createColor) // add items
-router.get('/items', itemsController.getItems) // show items
-router.get('/items/:id', itemsController.getDetailItem) // show detail items
-router.put('/items/:id', itemsController.updateItem) // edit items
-router.patch('/items/:id', itemsController.updatePartialItem) // edit items
-router.delete('/items/:id', itemsController.deleteItem) // delete items
+// color
+router.post('/color', Colors.create)
+router.get('/color', Colors.getColor)
+router.get('/color/:id', Colors.detailColor)
+router.put('/color/:id', Colors.updateColor)
+router.delete('/color/:id', Colors.deleteColor)
 
 module.exports = router

@@ -1,35 +1,39 @@
 require('dotenv').config()
-const { APP_PORT } = process.env
+const { BACKEND_PORT } = process.env
 const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const app = express()
 
 // middleware
-app.use(bodyParser.urlencoded({ extended: false }))
 app.use(cors())
-
-// import middleware
-const {
-  authAdmin, authSeller, authCust
-} = require('./src/middleware/auth')
-
-// provide static files
+app.use(bodyParser.urlencoded({ extended: false }))
 app.use('/uploads', express.static('assets/uploads/'))
 
-// import route
-// const homeRouter = require('./src/routes/public/homeRoutes')
-const authRouter = require('./src/routes/authPublic')
-const adminRouter = require('./src/routes/admin')
-const sellerRouter = require('./src/routes/seller')
-const custRouter = require('./src/routes/customer')
+// import Authentikasi
+const Auth = require('./src/middleware/auth')
 
-// app.use('/home', homeRouter)
-app.use('/public', authRouter)
-app.use('/admin', authAdmin, adminRouter)
-app.use('/seller', authSeller, sellerRouter)
-app.use('/customer', authCust, custRouter)
+// import router for access
+const Authentikasi = require('./src/routes/auth')
+const Admin = require('./src/routes/admin')
+const Seller = require('./src/routes/seller')
+const Customer = require('./src/routes/customer')
+const Public = require('./src/routes/public')
 
-app.listen(APP_PORT, () => {
-  console.log(`App listening on port ${APP_PORT}`)
+// use access route
+app.use('/auth', Authentikasi)
+app.use('/admin', Auth.Admin, Admin)
+app.use('/seller', Auth.Seller, Seller)
+app.use('/customer', Auth.Customer, Customer)
+app.use('/public', Public)
+
+app.get('/', (req, res) => {
+  res.send({
+    success: true,
+    message: 'Backend is Running now'
+  })
+})
+
+app.listen(BACKEND_PORT, () => {
+  console.log(`App listening on port ${BACKEND_PORT}`)
 })

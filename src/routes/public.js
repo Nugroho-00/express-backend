@@ -1,12 +1,12 @@
 const { Router } = require('express')
-const { getItems, getDetailItem } = require('../controllers/items')
-const { getIdCategory, getCategory } = require('../controllers/kategori')
+const produk = require('../controllers/items')
+const category = require('../controllers/kategori')
 
 const router = Router()
 
-router.get('/home', getItems)
-router.get('/home/:id', getDetailItem)
-router.get('/categori/:id', getIdCategory)
-router.get('/categori', getCategory)
+router.get('/view/produk', produk.getItems)
+router.get('/view/produk/detail/:id', produk.detailItems)
+router.get('/view/categori', category.getCategories)
+router.get('/view/detail/categori/:id', category.detailCategory)
 
 module.exports = router

@@ -1,108 +1,73 @@
-const paging = require('../helpers/pagination')
+const rolesModel = require('../models/roleUser')
 const responseStandard = require('../helpers/response')
-const { createRoleModel, getDetailRoleModel, getRoleUserModel, countRoleModel, updatePartialRoleModel, deleteRoleUserModel } = require('../models/roleUser')
+const paging = require('../helpers/pagination')
+const searching = require('../helpers/search')
+const sorting = require('../helpers/sort')
 
 module.exports = {
-  getDetailRole: (req, res) => {
-    const { id } = req.params
-    getDetailRoleModel(id, result => {
-      if (result.length) {
-        res.status(201).send({
-          succes: true,
-          message: `User with id ${id}`,
-          data: result[0]
-        })
-      } else {
-        res.send({
-          succes: false,
-          message: 'user id not found!'
-        })
+  create: async (req, res) => {
+    const { name } = req.body
+    if (name) {
+      const results = await rolesModel.createModel(name)
+      const data = {
+        id: results.insertId,
+        ...req.body
       }
-    })
-  },
-  getAllRole: async (req, res) => {
-    const count = await countRoleModel()
-    const page = paging(req, count)
-    const { offset, pageInfo } = page
-    const { limitData: limit } = pageInfo
-    const result = await getRoleUserModel([limit, offset])
-    return responseStandard(res, 'List of users', { result, pageInfo })
-  },
-  createRoleUser: (req, res) => {
-    const { name, description } = req.body
-    createRoleModel([name, description], (err, result) => {
-      if (!err) {
-        res.send({
-          success: true,
-          message: 'Role User has been create',
-          data: {
-            id: result.insertId,
-            ...req.body
-          }
-        })
-      } else {
-        res.send({
-          success: false,
-          message: 'All file must be filled'
-        })
-      }
-    })
-  },
-  updatePartialRole: (req, res) => {
-    const { id } = req.params
-    const { name = '', description = '' } = req.body
-    if (name.trim() || description.trim()) {
-      getDetailRoleModel(id, result => {
-        if (result.length) {
-          const data = Object.entries(req.body).map(item => {
-            return parseInt(item[1]) > 0 ? `${item[0]}=${item[1]}` : `${item[0]}='${item[1]}'`
-          })
-          updatePartialRoleModel(id, data, result => {
-            if (result.affectedRows) {
-              res.send({
-                success: true,
-                message: `User with id ${id} updated`,
-                data: req.body
-              })
-            } else {
-              res.send({
-                success: false,
-                message: 'Failed to update user!!!'
-              })
-            }
-          })
-        } else {
-          res.send({
-            success: false,
-            message: 'internal server error'
-          })
-        }
-      })
+      responseStandard(res, 'Role has been created!', { data }, 201)
+    } else {
+      responseStandard(res, 'Try again! Please insert role name!', {}, 400, false)
     }
   },
-  deleteRole: (req, res) => {
+  getRoles: async (req, res) => {
+    const { searchKey, searchValue } = searching.name(req.query.search)
+    const { sortKey, sortBy } = sorting.name(req.query.sort)
+    const count = await rolesModel.countModel()
+    const page = paging(req, count[0].count)
+    const { offset, pageInfo } = page
+    const { limitData: limit } = pageInfo
+    const results = await rolesModel.getModel([searchKey, searchValue, sortKey, sortBy], [limit, offset])
+    if (results.length) {
+      return responseStandard(res, 'List of Roles', { results, pageInfo })
+    } else {
+      return responseStandard(res, 'There is no data in list', {}, 404, false)
+    }
+  },
+  detailRole: async (req, res) => {
     const { id } = req.params
-    getDetailRoleModel(id, result => {
-      if (result.length) {
-        deleteRoleUserModel(id, result => {
-          if (result.affectedRows) {
-            res.send({
-              success: true,
-              message: `user with id ${id} deleted`
-            })
-          } else {
-            res.send({
-              success: false,
-              message: 'Failed delete user'
-            })
-          }
-        })
+    const results = await rolesModel.detailModel(id)
+    if (results.length) {
+      responseStandard(res, `Role with id ${id}`, { results })
+    } else {
+      responseStandard(res, `Role with id ${id} is not found`, {}, 404, false)
+    }
+  },
+  updateRole: async (req, res) => {
+    const { id } = req.params
+    const { name } = req.body
+    const isExist = await rolesModel.detailModel(id)
+    if (isExist.length > 0) {
+      const results = await rolesModel.updateModel([name, id])
+      if (results.affectedRows) {
+        responseStandard(res, 'Role\'s name has been updated!')
       } else {
-        res.send({
-          success: false,
-          message: `user with ${id} not found`
-        })
+        responseStandard(res, 'Failed to update name!', {}, 304, false)
       }
-    })
+    } else {
+      responseStandard(res, `Role with id ${id} is not found`, {}, 404, false)
+    }
+  },
+  deleteRole: async (req, res) => {
+    const { id } = req.params
+    const isExist = await rolesModel.detailModel(id)
+    if (isExist.length > 0) {
+      const results = await rolesModel.deleteModel(id)
+      if (results.affectedRows) {
+        responseStandard(res, `Role with id ${id} has been deleted`)
+      } else {
+        responseStandard(res, `Failed to delete role with id ${id}`, {}, 500, false)
+      }
+    } else {
+      responseStandard(res, `Role with id ${id} is not found`, {}, 404, false)
+    }
   }
 }

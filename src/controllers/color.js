@@ -1,85 +1,73 @@
-const paging = require('../helpers/pagination')
+const colorModel = require('../models/color')
 const responseStandard = require('../helpers/response')
-const { createColorModel, getIdColorModel, getColorModel, countColorModel, deleteColorModel } = require('../models/color')
+const paging = require('../helpers/pagination')
+const searching = require('../helpers/search')
+const sorting = require('../helpers/sort')
 
 module.exports = {
-  getDetailColor: (req, res) => {
-    const { id } = req.params
-    getIdColorModel(id, result => {
-      if (result.length) {
-        res.status(201).send({
-          succes: true,
-          message: `Color with id ${id}`,
-          data: result[0]
-        })
-      } else {
-        res.send({
-          succes: false,
-          message: 'Color id not found!'
-        })
+  create: async (req, res) => {
+    const { name } = req.body
+    if (name) {
+      const results = await colorModel.createModel(name)
+      const data = {
+        id: results.insertId,
+        ...req.body
       }
-    })
-  },
-  getColor: async (req, res) => {
-    const count = await countColorModel()
-    const page = paging(req, count)
-    const { offset, pageInfo } = page
-    const { limitData: limit } = pageInfo
-    const result = await getColorModel([limit, offset])
-    return responseStandard(res, 'List of Color', { result, pageInfo })
-  },
-  addColor: (req, res) => {
-    const { colorName } = req.body
-    if (colorName) {
-      createColorModel([colorName], (err, result) => {
-        if (!err) {
-          res.status(201).send({
-            success: true,
-            message: 'Color has been Add',
-            data: {
-              id: result.insertId,
-              ...req.body
-            }
-          })
-        } else {
-          res.send({
-            success: false,
-            message: 'Failed Add Color'
-          })
-        }
-      })
+      responseStandard(res, 'Color has been created!', { data }, 201)
     } else {
-      res.status(400).send({
-        success: false,
-        message: 'All field must be filled'
-      })
+      responseStandard(res, 'Try again! Please insert role name!', {}, 400, false)
     }
   },
-  deleteColor: (req, res) => {
-    const {
-      id
-    } = req.params
-    getIdColorModel(id, result => {
-      if (result.length) {
-        deleteColorModel(id, result => {
-          if (result.affectedRows) {
-            res.send({
-              success: true,
-              message: `Color with id ${id} has been deleted!`
-            })
-          } else {
-            res.send({
-              success: false,
-              message: 'Failed to delete Color'
-            })
-          }
-        })
+  getColor: async (req, res) => {
+    const { searchKey, searchValue } = searching.name(req.query.search)
+    const { sortKey, sortBy } = sorting.name(req.query.sort)
+    const count = await colorModel.countModel()
+    const page = paging(req, count[0].count)
+    const { offset, pageInfo } = page
+    const { limitData: limit } = pageInfo
+    const results = await colorModel.getModel([searchKey, searchValue, sortKey, sortBy], [limit, offset])
+    if (results.length) {
+      return responseStandard(res, 'List of Colors', { results, pageInfo })
+    } else {
+      return responseStandard(res, 'There is no data in list', {}, 404, false)
+    }
+  },
+  detailColor: async (req, res) => {
+    const { id } = req.params
+    const results = await colorModel.detailModel(id)
+    if (results.length) {
+      responseStandard(res, `Color with id ${id}`, { results })
+    } else {
+      responseStandard(res, `Color with id ${id} is not found`, {}, 404, false)
+    }
+  },
+  updateColor: async (req, res) => {
+    const { id } = req.params
+    const { name } = req.body
+    const isExist = await colorModel.detailModel(id)
+    if (isExist.length > 0) {
+      const results = await colorModel.updateModel([name, id])
+      if (results.affectedRows) {
+        responseStandard(res, 'Color\'s name has been updated!')
       } else {
-        res.send({
-          success: false,
-          message: 'Color not found!!'
-        })
+        responseStandard(res, 'Failed to update name!', {}, 304, false)
       }
-    })
+    } else {
+      responseStandard(res, `Color with id ${id} is not found`, {}, 404, false)
+    }
+  },
+  deleteColor: async (req, res) => {
+    const { id } = req.params
+    const isExist = await colorModel.detailModel(id)
+    if (isExist.length > 0) {
+      const results = await colorModel.deleteModel(id)
+      if (results.affectedRows) {
+        responseStandard(res, `Color with id ${id} has been deleted`)
+      } else {
+        responseStandard(res, `Failed to delete role with id ${id}`, {}, 500, false)
+      }
+    } else {
+      responseStandard(res, `Color with id ${id} is not found`, {}, 404, false)
+    }
   }
 }

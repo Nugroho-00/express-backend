@@ -1,109 +1,100 @@
-const paging = require('../helpers/pagination')
+const cartModel = require('../models/chart')
+const { chart: schema } = require('../helpers/validation')
 const responseStandard = require('../helpers/response')
-const { getChartIdModel, getChartModel, countChartModel, createChartModel, updatePartialChartModel, deleteChartModel } = require('../models/chart')
+const paging = require('../helpers/pagination')
+const searching = require('../helpers/search')
+const sorting = require('../helpers/sort')
 
 module.exports = {
-  getChartId: (req, res) => {
-    const { id } = req.params
-    getChartIdModel(id, (err, result) => {
-      if (!err) {
-        if (result.length) {
-          res.status(201).send({
-            succes: true,
-            message: 'Chart list with id',
-            data: result[0]
-          })
-        } else {
-          res.send({
-            succes: false,
-            message: 'Chart list id not found'
-          })
-        }
-      } else {
-        res.send({
-          success: false,
-          message: err.message
-        })
+  create: async (req, res) => {
+    const { id: userId } = req.data
+    const { value: results, error } = schema.validate(req.body)
+    if (error) {
+      return responseStandard(res, 'Error', { error: error.message }, 400, false)
+    } else {
+      const { itemsId, quantity } = results
+      const cart = {
+        user_id: userId,
+        items_id: itemsId,
+        quantity: quantity
       }
-    })
+      const createCart = await cartModel.createModel(cart)
+      if (createCart.affectedRows) {
+        const data = {
+          id: createCart.insertId,
+          ...cart
+        }
+        return responseStandard(res, 'Add cart succesfully!', { data: data }, 200)
+      } else {
+        return responseStandard(res, 'Failed to add cart', {}, 400, false)
+      }
+    }
   },
-  getChart: async (req, res) => {
-    const count = await countChartModel()
-    const page = paging(req, count)
+  getAll: async (req, res) => {
+    const { id: userId } = req.data
+    const { searchKey, searchValue } = searching.name(req.query.search)
+    const { sortKey, sortBy } = sorting.name(req.query.sort)
+    const count = await cartModel.countModel(userId)
+    const page = paging(req, count[0].count)
     const { offset, pageInfo } = page
     const { limitData: limit } = pageInfo
-    const result = await getChartModel([limit, offset])
-    console.log(result)
-    return responseStandard(res, 'List of Chart', { result, pageInfo })
-  },
-  createChart: (req, res) => {
-    const { userId, itemId, quantity, colorId } = req.body
-    if (userId && itemId && quantity && colorId) {
-      createChartModel([userId, itemId, quantity, colorId], (err, result) => {
-        if (!err) {
-          res.send({
-            success: true,
-            message: `chart with id ${userId} has been created`
-          })
-        } else {
-          res.send({
-            success: false,
-            message: `no chart with user id ${userId}`
-          })
-        }
-      })
+    const results = await cartModel.getModel([searchKey, searchValue, sortKey, sortBy], [userId, limit, offset])
+    if (results.length) {
+      return responseStandard(res, 'My Cart', { results, pageInfo })
     } else {
-      res.send({
-        success: false,
-        message: ' all filed must be filled'
-      })
+      return responseStandard(res, 'There is no product in cart', {}, 404, false)
     }
   },
-  updatePartialChart: (req, res) => {
+  detailChart: async (req, res) => {
+    const { id: userId } = req.data
     const { id } = req.params
-    const { userId = '', itemId = '', quantity = '', colorId = '' } = req.body
-    if (userId.trim() || itemId.trim() || quantity.trim() || colorId.trim()) {
-      getChartIdModel(id, result => {
-        const data = Object.entries(req.body).map(item => {
-          return parseInt(item[1]) > 0 ? `${item[0]}=${item[1]}` : `${item[0]}='${item[1]}'`
-        })
-        updatePartialChartModel([data, id], result => {
-          if (result.affectedRows) {
-            res.send({
-              success: true,
-              message: `Chart ${id} has been updated`
-            })
-          } else {
-            res.send({
-              success: false,
-              message: 'Failed to update chart'
-            })
-          }
-        })
-      })
+    const results = await cartModel.detailModel([userId, id])
+    if (results.length) {
+      return responseStandard(res, 'Detail My Chart', { data: results })
     } else {
-      res.send({
-        success: false,
-        message: 'At least one column is filled'
-      })
+      return responseStandard(res, 'There is no data', {}, 404, false)
     }
   },
-  deleteChart: (req, res) => {
-    const { id } = req.params
-    getChartIdModel(id, result => {
-      deleteChartModel(id, result => {
-        if (result.affectedRows) {
-          res.send({
-            success: true,
-            message: `Chart with id ${id} Deleted`
-          })
+  editCart: async (req, res) => {
+    const { id: userId } = req.data
+    const { id: cartId } = req.params
+    const { quantity } = req.body
+    if (quantity > 0) {
+      const isExist = await cartModel.detailModel([userId, cartId])
+      if (!isExist.length) {
+        return responseStandard(res, 'You don\'t have this cart', {}, 400, false)
+      } else {
+        const edit = await cartModel.updateModel([{ quantity: quantity }, cartId])
+        if (edit.affectedRows) {
+          return responseStandard(res, 'Update cart succesfully')
         } else {
-          res.send({
-            success: false,
-            message: `cannot delete Chart!! with id ${id}`
-          })
+          return responseStandard(res, 'Failed to update cart', {}, 400, false)
         }
-      })
-    })
+      }
+    } else if (quantity === '0') {
+      const deleteCart = await cartModel.deleteModel([userId, cartId])
+      if (deleteCart.affectedRows) {
+        return responseStandard(res, 'Product deleted from cart')
+      } else {
+        return responseStandard(res, 'There is no product in cart', {}, 400, false)
+      }
+    } else {
+      return responseStandard(res, 'Please insert valid value', {}, 400, false)
+    }
+  },
+  deleteCart: async (req, res) => {
+    const { id: userId } = req.data
+    const { id: cartId } = req.params
+    const isExist = await cartModel.detailModel([userId, cartId])
+    if (!isExist.length) {
+      return responseStandard(res, 'There is no cart', {}, 404, false)
+    } else {
+      const deleteCart = await cartModel.deleteModel([userId, cartId])
+      if (deleteCart.affectedRows) {
+        return responseStandard(res, 'Cart deleted')
+      } else {
+        return responseStandard(res, 'Failed to delete', {}, 400, false)
+      }
+    }
   }
 }

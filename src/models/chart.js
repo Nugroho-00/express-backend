@@ -1,51 +1,64 @@
-const db = require('../helpers/db')
-const table1 = 'chart'
-const table2 = 'user'
-const table3 = 'item'
+const table = 'carts'
+const tableUser = 'users'
+const tableItem = 'items'
+const tableImage = 'image'
+const tableStore = 'store'
+const tableDetail = 'userDetail'
+const model = require('../helpers/connection')
+
+const column = `${table}.id,quantity,item, price, picture`
+const join = `
+INNER JOIN ${tableUser} ON ${tableUser}.id = ${table}.user_id
+INNER JOIN (  
+  SELECT ${tableItem}.id AS itemImage_id,${tableItem}.name AS Item,price,${tableImage}.picture as picture 
+  FROM ${tableItem}
+  INNER JOIN ${tableImage}
+  ON ${tableImage}.items_id=${tableItem}.id  
+  GROUP BY ${tableItem}.id
+) itemImage ON  itemImage.itemImage_id = ${table}.items_id
+`
+const column2 = `${table}.id, ${tableItem}.seller_id, ${tableStore}.name AS store, ${table}.user_id, ${tableDetail}.name AS user, ${tableItem}.name, ${tableItem}.price, ${table}.quantity, ${table}.quantity*${tableItem}.price AS total`
+const join2 = `LEFT JOIN ${tableDetail} ON ${tableDetail}.user_id=${table}.user_id LEFT JOIN ${tableItem} ON ${tableItem}.id=${table}.items_id LEFT JOIN ${tableStore} ON ${tableStore}.user_id=${tableItem}.seller_id`
 
 module.exports = {
-  createChartModel: (arr, cb) => {
-    db.query(`INSERT INTO ${table1} (userId, itemId, quantity, colorId) VALUES (${arr[0]}, ${arr[1]}, ${arr[2]}, ${arr[3]})`, (err, result, field) => {
-      cb(err, result)
-    })
+  createModel: (data = {}) => {
+    const query = `INSERT INTO ${table} SET ?`
+    const results = model(query, data)
+    return results
   },
-  getChartModel: (data = []) => {
-    return new Promise((resolve, reject) => {
-      db.query(`SELECT ${table1}.id, ${table2}.name, ${table3}.name, ${table1}.quantity, ${table3}.price, ${table1}.createdAt FROM ${table1} 
-      INNER JOIN ${table2} ON ${table1}.userId = ${table2}.id
-      INNER JOIN ${table3} ON ${table1}.itemId = ${table3}.id LIMIT ? OFFSET ?`, data, (err, result, fields) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(result)
-        }
-      })
-    })
+  countModel: (data = {}) => {
+    const query = `SELECT COUNT(*) as count FROM ${table} WHERE user_id=?`
+    const results = model(query, data)
+    return results
   },
-  countChartModel: () => {
-    return new Promise((resolve, reject) => {
-      db.query(`SELECT COUNT(*) AS count FROM ${table1}`, (err, result, _fields) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(result[0].count)
-        }
-      })
-    })
+  getModel: (arr, data = []) => {
+    const query = `SELECT ${column} FROM ${table} ${join} WHERE user_id=? LIMIT ? OFFSET ?`
+    const results = model(query, data)
+    return results
   },
-  getChartIdModel: (id, cb) => {
-    db.query(`SELECT * FROM ${table1} WHERE id=${id}`, (err, result, field) => {
-      cb(err, result)
-    })
+  getAllModel: (data = {}) => {
+    const query = `SELECT ${column2} FROM ${table} ${join2} WHERE ${table}.user_id=?`
+    const results = model(query, data)
+    return results
   },
-  updatePartialChartModel: (arr, cb) => {
-    db.query(`UPDATE ${table1} SET ${arr[0]} WHERE id=${arr[1]}`, (_err, result, field) => {
-      cb(result)
-    })
+  detailModel: (data = []) => {
+    const query = `SELECT * FROM ${table} WHERE user_id=? AND id=?`
+    const results = model(query, data)
+    return results
   },
-  deleteChartModel: (id, cb) => {
-    db.query(`DELETE FROM ${table1} WHERE id=${id}`, (_err, result, field) => {
-      cb(result)
-    })
+  updateModel: (data = []) => {
+    const query = `UPDATE ${table} SET ? WHERE id = ?`
+    const results = model(query, data)
+    return results
+  },
+  deleteModel: (data = []) => {
+    const query = `DELETE FROM ${table} WHERE user_id=? AND id = ?`
+    const results = model(query, data)
+    return results
+  },
+  deleteAllModel: (data = []) => {
+    const query = `DELETE FROM ${table} WHERE user_id=?`
+    const results = model(query, data)
+    return results
   }
 }

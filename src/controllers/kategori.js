@@ -1,180 +1,79 @@
-const qs = require('querystring')
-const { getIdCategoryModel, getAllCategoryModel, searchCategoryModel, createCategoryModel, updateCategoryModel, deleteCategoryModel } = require('../models/kategori')
+const categoriesModel = require('../models/kategori')
+const responseStandard = require('../helpers/response')
+const searching = require('../helpers/search')
+const sorting = require('../helpers/sort')
+const paging = require('../helpers/pagination')
 
 module.exports = {
-  getIdCategory: (req, res) => {
-    const { id } = req.params
-    getIdCategoryModel(id, (err, result) => {
-      if (!err) {
-        if (result.length) {
-          res.send({
-            success: true,
-            message: `category with id ${id}`,
-            data: result
-          })
-        } else {
-          res.send({
-            success: false,
-            message: 'No category found',
-            data: result
-          })
-        }
-      } else {
-        res.send({
-          success: false,
-          message: 'Internal server error'
-        })
-      }
-    })
-  },
-  getCategory: (req, res) => {
-    let { page, limit, search, sort } = req.query
-    let sortBy = ''
-    let sortFrom = ''
-    if (typeof sort === 'object') {
-      sortBy = Object.keys(sort)[0]
-      sortFrom = Object.values(sort)[0]
-    } else {
-      sortBy = 'id'
-      sortFrom = sort || ''
-    }
-    let searchKey = ''
-    let searchValue = ''
-    if (typeof search === 'object') {
-      searchKey = Object.keys(search)[0]
-      searchValue = Object.values(search)[0]
-    } else {
-      searchKey = 'id'
-      searchValue = search || ''
-    }
-    if (!limit) {
-      limit = 5
-    } else {
-      limit = parseInt(limit)
-    }
-    if (!page) {
-      page = 1
-    } else {
-      page = parseInt(page)
-    }
-    const offset = (page - 1) * limit
-    getAllCategoryModel([searchKey, searchValue], [sortBy, sortFrom], [limit, offset], (err, result) => {
-      if (!err) {
-        const pageInfo = {
-          count: 0,
-          pages: 0,
-          currentPage: page,
-          LimitPage: limit,
-          nextLink: null,
-          prevLink: null
-        }
-        if (result.length) {
-          searchCategoryModel([searchKey, searchValue], [sortBy, sortFrom], data => {
-            const { count } = data[0]
-            pageInfo.count = count
-            pageInfo.pages = Math.ceil(count / limit)
-
-            const { pages, currentPage } = pageInfo
-
-            if (currentPage < pages) {
-              pageInfo.nextLink = `http://localhost:8000/category?${qs.stringify({ ...req.query, ...{ page: page + 1 } })}`
-            }
-            if (currentPage > 1) {
-              pageInfo.prevLink = `http://localhost:8000/category?${qs.stringify({ ...req.query, ...{ page: page - 1 } })}`
-            }
-            res.send({
-              success: true,
-              message: 'List Items',
-              data: result,
-              pageInfo
-            })
-          })
-        } else {
-          res.send({
-            success: 'false',
-            message: 'No item'
-          })
-        }
-      } else {
-        res.status(500).send({
-          success: 'false',
-          message: 'internal server error'
-        })
-      }
-    })
-  },
-  createCategory: (req, res) => {
+  create: async (req, res) => {
     const { name } = req.body
-    createCategoryModel(name, (err, result) => {
-      if (!err) {
-        res.send({
-          success: true,
-          message: 'Category has been create',
-          data: {
-            id: result.insertId,
-            ...req.body
-          }
-        })
-      } else {
-        res.send({
-          success: false,
-          message: 'All file must be filled'
-        })
+    if (name) {
+      const results = await categoriesModel.createModel(name)
+      const data = {
+        id: results.insertId,
+        ...req.body
       }
-    })
-  },
-  updateCategory: (req, res) => {
-    const { id } = req.params
-    const { name = '' } = req.body
-    if (name.trim()) {
-      updateCategoryModel(id, name, (err, result) => {
-        if (!err) {
-          if (result.affectedRows) {
-            res.send({
-              success: true,
-              message: `Category has ben update with id ${id}!`
-            })
-          } else {
-            res.send({
-              success: false,
-              message: 'failed to update Category'
-            })
-          }
-        } else {
-          res.send({
-            success: false,
-            message: `category with id ${id} not found`
-          })
-        }
-      })
+      responseStandard(res, 'Category has been created!', { data }, 201)
     } else {
-      res.send({
-        success: false,
-        message: 'All field must be filled'
-      })
+      responseStandard(res, 'Try again! Please insert role name!', {}, 400, false)
     }
   },
-  deleteCategory: (req, res) => {
+  getCategories: async (req, res) => {
+    const { searchKey, searchValue } = searching.name(req.query.search)
+    const { sortKey, sortBy } = sorting.name(req.query.sort)
+    const count = await categoriesModel.countModel([searchKey, searchValue, sortKey, sortBy])
+    const page = paging(req, count[0].count)
+    const { offset, pageInfo } = page
+    const { limitData: limit } = pageInfo
+    const results = await categoriesModel.getModel([searchKey, searchValue, sortKey, sortBy], [limit, offset])
+    if (results.length) {
+      return responseStandard(res, 'List of Category', { data: results, pageInfo })
+    } else {
+      return responseStandard(res, 'There is no item in list', {}, 404, false)
+    }
+  },
+  detailCategory: async (req, res) => {
     const { id } = req.params
-    deleteCategoryModel(id, (err, result) => {
-      if (!err) {
-        if (result.affectedRows) {
-          res.send({
-            success: true,
-            message: `Category with id ${id} has been delete!`
-          })
-        } else {
-          res.send({
-            success: false,
-            message: `failed delete! id ${id} not found!!`
-          })
-        }
+    const { searchKey, searchValue } = searching.name(req.query.search)
+    const { sortKey, sortBy } = sorting.name(req.query.sort)
+    const count = await categoriesModel.countDetailModel([searchKey, searchValue, sortKey, sortBy], id)
+    const page = paging(req, count[0].count)
+    const { offset, pageInfo } = page
+    const { limitData: limit } = pageInfo
+    const results = await categoriesModel.detailModel([searchKey, searchValue, sortKey, sortBy], [id, limit, offset])
+    if (results.length) {
+      responseStandard(res, `Category with id ${id}`, { results, pageInfo })
+    } else {
+      responseStandard(res, `Category with id ${id} is not found`, {}, 404, false)
+    }
+  },
+  updateCategories: async (req, res) => {
+    const { id } = req.params
+    const { name } = req.body
+    const isExist = await categoriesModel.detailModel(id)
+    if (isExist.length > 0) {
+      const results = await categoriesModel.updateModel([name, id])
+      if (results.affectedRows) {
+        responseStandard(res, 'Category\'s name has been updated!')
       } else {
-        res.send({
-          success: false,
-          message: 'Category not found'
-        })
+        responseStandard(res, 'Failed to update name!', {}, 304, false)
       }
-    })
+    } else {
+      responseStandard(res, `Category with id ${id} is not found`, {}, 404, false)
+    }
+  },
+  deleteCategories: async (req, res) => {
+    const { id } = req.params
+    const isExist = await categoriesModel.detailModel(id)
+    if (isExist.length > 0) {
+      const results = await categoriesModel.deleteModel(id)
+      if (results.affectedRows) {
+        responseStandard(res, `Category with id ${id} has been deleted`)
+      } else {
+        responseStandard(res, `Failed to delete category with id ${id}`, {}, 500, false)
+      }
+    } else {
+      responseStandard(res, `Category with id ${id} is not found`, {}, 404, false)
+    }
   }
 }

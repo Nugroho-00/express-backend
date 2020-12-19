@@ -1,7 +1,6 @@
-const db = require('../helpers/db')
+const db = require('./db')
 
 module.exports = (query, data = []) => {
-  // console.log(data)
   return new Promise((resolve, reject) => {
     db.query(query, data, (err, results, _fields) => {
       if (err) {

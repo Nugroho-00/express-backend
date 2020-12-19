@@ -1,42 +1,35 @@
-const db = require('../helpers/db')
-const table = 'color_item'
+const table = 'color'
+const model = require('../helpers/connection')
 
 module.exports = {
-  getIdColorModel: (id, cb) => {
-    db.query(`SELECT * FROM ${table} WHERE id= ${id}`, (_err, result, field) => {
-      cb(result)
-    })
+  createModel: (data = {}) => {
+    const query = `INSERT INTO ${table} (name) VALUES (?)`
+    const results = model(query, data)
+    return results
   },
-  getColorModel: (data = {}) => {
-    return new Promise((resolve, reject) => {
-      db.query(`SELECT * FROM ${table} LIMIT ? OFFSET ?`, data, (err, result, _fields) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(result)
-        }
-      })
-    })
+  countModel: () => {
+    const query = `SELECT COUNT(*) as count FROM ${table}`
+    const results = model(query)
+    return results
   },
-  countColorModel: () => {
-    return new Promise((resolve, reject) => {
-      db.query(`SELECT COUNT(*) AS count FROM ${table}`, (err, result, _fields) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(result[0].count)
-        }
-      })
-    })
+  getModel: (arr, data = []) => {
+    const query = `SELECT * FROM ${table} WHERE ${arr[0]} LIKE '%${arr[1]}%' ORDER BY ${arr[2]} ${arr[3]} LIMIT ? OFFSET ?`
+    const results = model(query, data)
+    return results
   },
-  createColorModel: (arr, cb) => {
-    db.query(`INSERT INTO ${table} (colorName) VALUES ('${arr[0]}')`, (err, result, field) => {
-      cb(err, result)
-    })
+  detailModel: (data = {}) => {
+    const query = `SELECT * FROM ${table} WHERE id=?`
+    const results = model(query, data)
+    return results
   },
-  deleteColorModel: (id, cb) => {
-    db.query(`DELETE FROM ${table} WHERE id=${id}`, (_err, result, field) => {
-      cb(result)
-    })
+  updateModel: (data = []) => {
+    const query = `UPDATE ${table} SET name = ? WHERE id = ?`
+    const results = model(query, data)
+    return results
+  },
+  deleteModel: (data = {}) => {
+    const query = `DELETE FROM ${table} WHERE id = ?`
+    const results = model(query, data)
+    return results
   }
 }

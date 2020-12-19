@@ -1,49 +1,56 @@
 const router = require('express').Router()
-const rolesController = require('../controllers/roleUser')
-const conditionsController = require('../controllers/conditions')
-const colorsController = require('../controllers/color')
-const usersController = require('../controllers/user')
-const categoriesController = require('../controllers/Kategori')
-const itemsController = require('../controllers/items')
+const Roles = require('../controllers/roleUser')
+const Conditions = require('../controllers/conditions')
+const Colors = require('../controllers/color')
+const Users = require('../controllers/user')
+const Category = require('../controllers/kategori')
+const Items = require('../controllers/items')
+const Gender = require('../controllers/gender')
 
 // roles
-router.post('/roles', rolesController.createRoleUser) // add roles
-router.get('/roles', rolesController.getAllRole) // show roles
-router.get('/roles/:id', rolesController.getDetailRole) // show detail roles
-router.put('/roles/:id', rolesController.updatePartialRole) // edit roles
-router.delete('/roles/:id', rolesController.deleteRole) // delete roles
-// color
-router.post('/color', colorsController.addColor) // add color
-router.get('/color', colorsController.getColor) // show color
-router.get('/color/:id', colorsController.getDetailColor) // show detail color
-// router.put('/color/:id', colorsController.updateColor) // edit color
-router.delete('/color/:id', colorsController.deleteColor) // delete color
-// Condition
-router.post('/condition', conditionsController.addConditions) // add condition
-router.get('/condition', conditionsController.getConditions) // show condition
-router.get('/condition/:id', conditionsController.getDetailConditions) // show detail condition
-// router.put('/condition/:id', conditionsController.updateCondition) // edit condition
-router.delete('/condition/:id', conditionsController.deleteConditions) // delete Condition
+router.post('/roles', Roles.create)
+router.get('/roles', Roles.getRoles)
+router.get('/roles/:id', Roles.detailRole)
+router.put('/roles/:id', Roles.updateRole)
+router.delete('/roles/:id', Roles.deleteRole)
+
+// gender
+router.post('/gender/add', Gender.addGender)
+router.get('/gender/:id', Gender.getDetailGender)
+router.get('/gender', Gender.getGender)
+router.delete('/gender/delete/:id', Gender.deleteGender)
 
 // users
-router.post('/users', usersController.createUser) // users
-router.get('/users', usersController.getAllUser) // users
-// router.get('/users/:id', usersController.getDetailForAdmin) // users
-// router.delete('/users/:id', usersController.deleteUserForAdmin) // users
+router.get('/users', Users.getAll)
+router.get('/users/detail', Users.getDetailForAdmin)
+router.delete('/users/delete/:id', Users.deleteUserForAdmin)
+
+// Items
+router.post('items/', Items.create)
+router.get('items/', Items.getItems)
+router.get('items/:id', Items.detailItems)
+router.put('items/:id', Items.updateItems)
+router.delete('items/:id', Items.deleteItems)
 
 // categories
-router.post('/category', categoriesController.createCategory) // add category
-router.get('/category', categoriesController.getCategory) // show category
-router.get('/category/:id', categoriesController.getIdCategory) // show detail category
-router.put('/category/:id', categoriesController.updateCategory) // edit category
-router.delete('/category/:id', categoriesController.deleteCategory) // delete category
+router.post('/category', Category.create)
+router.get('/view/category', Category.getCategories)
+router.get('/detail/category/:id', Category.detailCategory)
+router.put('/update/category/:id', Category.updateCategories)
+router.delete('/delete/category/:id', Category.deleteCategories)
 
-// product
-router.post('items/', itemsController.createItem) // add product
-// router.post('/color', itemsController.createColor) // add product
-router.get('items/', itemsController.getItems) // show product
-router.get('items/:id', itemsController.getDetailItem) // show detail product
-router.put('items/:id', itemsController.updateItem) // edit product
-router.delete('items/:id', itemsController.deleteItem) // delete product
+// color
+router.post('/color', Colors.create)
+router.get('/color', Colors.getColor)
+router.get('/color/:id', Colors.detailColor)
+router.put('/color/:id', Colors.updateColor)
+router.delete('/color/:id', Colors.deleteColor)
+
+// Condition
+router.post('/conditions', Conditions.create)
+router.get('/conditions', Conditions.getCondition)
+router.get('/conditions/:id', Conditions.detailCondition)
+router.put('/conditions/:id', Conditions.updateCondition)
+router.delete('/conditions/:id', Conditions.deleteCondition)
 
 module.exports = router

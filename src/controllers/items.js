@@ -1,218 +1,142 @@
-const qs = require('querystring')
+const itemsModel = require('../models/items')
 const responseStandard = require('../helpers/response')
-const {
-  getIdItemModel, getItemsModel, itemsModel, createItemModel,
-  updateItemModel, updatePartialItemModel, deleteItemModel
-} = require('../models/items')
+const { produk: schema } = require('../helpers/validation')
+const searching = require('../helpers/search')
+const sorting = require('../helpers/sort')
+const paging = require('../helpers/pagination')
 
 module.exports = {
-  getDetailItem: (req, res) => {
-    const { id } = req.params
-    getIdItemModel(id, data => {
-      return responseStandard(res, `Detail item with ${id}`, { data })
-    })
-  },
-  createItem: (req, res) => {
-    const { name, price, description, categoryId, colorId, conditionsId } = req.body
-    if (name && price && description && categoryId && colorId && conditionsId) {
-      createItemModel([name, price, description, categoryId, colorId, conditionsId], (err, result) => {
-        if (!err) {
-          res.status(201).send({
-            success: true,
-            message: 'Item has been created',
-            data: {
-              id: result.insertId,
-              ...req.body
-            }
-          })
-        } else {
-          res.send({
-            success: false,
-            message: 'Failed create Item'
-          })
-        }
-      })
+  create: async (req, res) => {
+    const { id: idUser } = req.data
+    console.log({ id: idUser })
+    const { value: results, error } = schema.validate(req.body)
+    if (error) {
+      return responseStandard(res, 'Error', { error: error.message }, 400, false)
     } else {
-      res.status(400).send({
-        success: false,
-        message: 'All field must be filled'
-      })
-    }
-  },
-  getItems: (req, res) => {
-    let { page, limit, search, sort } = req.query
-    let searchKey = ''
-    let searchValue = ''
-    let sortColumn = ''
-    let sortValue = ''
-    if (typeof search === 'object') {
-      searchKey = Object.keys(search)[0]
-      searchValue = Object.values(search)[0]
-    } else {
-      searchKey = 'name'
-      searchValue = search || ''
-    }
-    if (typeof sort === 'object') {
-      sortColumn = Object.keys(sort)[0]
-      sortValue = Object.values(sort)[0]
-    } else {
-      sortColumn = 'createdAt'
-      sortValue = sort || ''
-    }
-    if (!limit) {
-      limit = 5
-    } else {
-      limit = parseInt(limit)
-    }
-    if (!page) {
-      page = 1
-    } else {
-      page = parseInt(page)
-    }
-    const offset = (page - 1) * limit
-    getItemsModel(searchKey, searchValue, sortColumn, sortValue, limit, offset, (err, result) => {
-      if (!err) {
-        const pageInfo = {
-          count: 0,
-          pages: 0,
-          currentPage: page,
-          limitPage: limit,
-          nextLink: null,
-          prevLink: null
-        }
-        if (result.length) {
-          itemsModel([searchKey, searchValue], data => {
-            const {
-              count
-            } = data[0]
-            pageInfo.count = count
-            pageInfo.pages = Math.ceil(count / limit)
-            const {
-              pages,
-              currentPage
-            } = pageInfo
-            if (currentPage < pages) {
-              pageInfo.nextLink = `http://localhost:8000/items?${qs.stringify({ ...req.query, ...{ page: page + 1 } })}`
-            }
-            if (currentPage > 1) {
-              pageInfo.prevLink = `http://localhost:8000/items?${qs.stringify({ ...req.query, ...{ page: page - 1 } })}`
-            }
-            res.send({
-              success: true,
-              message: 'List of items',
-              data: result,
-              pageInfo
-            })
-          })
-        } else {
-          res.send({
-            success: true,
-            message: 'There is no list items'
-          })
-        }
-      } else {
-        console.log(err)
-        res.status(500).send({
-          success: false,
-          message: 'Internal server Error'
-        })
+      const { name, price, conditionId, categoryId, colorId, description } = results
+      const items = {
+        seller_id: idUser,
+        name,
+        price: price,
+        condition_id: parseInt(conditionId),
+        category_id: parseInt(categoryId),
+        color_id: parseInt(colorId),
+        description
       }
-    })
-  },
-  updateItem: (req, res) => {
-    const { id } = req.params
-    const { name, price, description, categoryId, colorId, conditionsId } = req.body
-    if (name.trim() && price.trim() && description.trim() && categoryId.trim() && colorId.trim() && conditionsId.trim()) {
-      getIdItemModel(id, result => {
-        if (result.length) {
-          updateItemModel(id, [name, price, description, categoryId, colorId, conditionsId], result => {
-            if (result.affectedRows) {
-              res.send({
-                success: true,
-                message: `items with id ${id} has been updated`
-              })
-            } else {
-              res.send({
-                success: false,
-                message: 'Failed to update data'
-              })
+      const createItems = await itemsModel.createModel(items)
+      if (createItems.affectedRows) {
+        const image = req.files.map(data => {
+          return data.path.replace(/\\/g, '/')
+        })
+        const picture1 = image[0]
+        const picture2 = image[1]
+        const id = createItems.insertId
+        const createImg = await itemsModel.createPictureModel([id, picture1, id, picture2, id])
+        if (createImg.affectedRows > 0) {
+          const data = {
+            item_id: createItems.insertId,
+            ...items,
+            image: {
+              picture1,
+              picture2
             }
-          })
-        } else {
-          res.send({
-            success: false,
-            message: `items with id ${id} not found`
-          })
-        }
-      })
-    } else {
-      res.send({
-        success: false,
-        message: 'All fileds must be filled'
-      })
-    }
-  },
-  updatePartialItem: (req, res) => {
-    const { id } = req.params
-    const { name = '', price = '', description = '', categoryId = '', colorId = '', conditionsId = '' } = req.body
-    if (name.trim() || price.trim() || description.trim() || categoryId.trim() || colorId.trim() || conditionsId.trim()) {
-      getIdItemModel(id, result => {
-        if (result.length) {
-          const data = Object.entries(req.body).map(item => {
-            return parseInt(item[1]) > 0 ? `${item[0]}=${item[1]}` : `${item[0]}='${item[1]}'`
-          })
-          updatePartialItemModel([data, id], result => {
-            if (result.affectedRows) {
-              res.send({
-                success: true,
-                message: `Items ${id} has been updated`
-              })
-            } else {
-              res.send({
-                success: false,
-                message: 'Failed to update data'
-              })
-            }
-          })
-        } else {
-          res.send({
-            success: false,
-            message: `There is no item with id ${id}`
-          })
-        }
-      })
-    } else {
-      res.send({
-        success: false,
-        message: 'At least one column is filled'
-      })
-    }
-  },
-  deleteItem: (req, res) => {
-    const {
-      id
-    } = req.params
-    getIdItemModel(id, result => {
-      if (result.length) {
-        deleteItemModel(id, result => {
-          if (result.affectedRows) {
-            res.send({
-              success: true,
-              message: `Item with id ${id} has been deleted!`
-            })
-          } else {
-            res.send({
-              success: false,
-              message: 'Failed to delete data'
-            })
           }
-        })
+          return responseStandard(res, 'image has been created', { data: data })
+        } else {
+          return responseStandard(res, 'Failed to create product color', {}, 400, false)
+        }
       } else {
-        res.send({
-          success: false,
-          message: 'Data not found!!'
-        })
+        return responseStandard(res, 'Failed to create product', {}, 400, false)
       }
-    })
+    }
+  },
+  getItems: async (req, res) => {
+    const { searchKey, searchValue } = searching.name(req.query.search)
+    const { sortKey, sortBy } = sorting.name(req.query.sort)
+    const count = await itemsModel.countModel([searchKey, searchValue, sortKey, sortBy])
+    const page = paging(req, count[0].count)
+    const { offset, pageInfo } = page
+    const { limitData: limit } = pageInfo
+    const results = await itemsModel.getModel([searchKey, searchValue, sortKey, sortBy], [limit, offset])
+    if (results.length) {
+      return responseStandard(res, 'List of list Items', { results, pageInfo })
+    } else {
+      return responseStandard(res, 'There is no data in list', {}, 404, false)
+    }
+  },
+  detailItems: async (req, res) => {
+    const { id } = req.params
+    const results = await itemsModel.detailModel(id)
+    if (results.length) {
+      responseStandard(res, `Product with id ${id}`, { results })
+    } else {
+      responseStandard(res, `Product with id ${id} is not found`, {}, 404, false)
+    }
+  },
+  updateItems: async (req, res) => {
+    const { id } = req.params
+    let { value: results, error } = schema.validate(req.body)
+    if (error) {
+      return responseStandard(res, 'Error', { error: error.message }, 400, false)
+    } else {
+      const { name, price, conditionId, categoryId, description } = results
+      const isExist = await itemsModel.detailModel(id)
+      if (isExist.length > 0) {
+        results = {
+          name,
+          price: parseInt(price),
+          condition_id: parseInt(conditionId),
+          category_id: categoryId,
+          description
+        }
+        const updateProduct = await itemsModel.updateModel([results, id])
+        if (updateProduct.affectedRows) {
+          responseStandard(res, 'Product\'s detail has been updated!')
+        } else {
+          responseStandard(res, 'Failed to update product!', {}, 304, false)
+        }
+      } else {
+        responseStandard(res, 'Failed to update product!', {}, 304, false)
+      }
+    }
+  },
+  deleteItems: async (req, res) => {
+    const { id } = req.params
+    const isExist = await itemsModel.detailModel(id)
+    if (isExist.length > 0) {
+      const results = await itemsModel.deleteModel(id)
+      if (results.affectedRows) {
+        responseStandard(res, `Product with id ${id} has been deleted`)
+      } else {
+        responseStandard(res, `Failed to delete product with id ${id}`, {}, 500, false)
+      }
+    } else {
+      responseStandard(res, `Product with id ${id} is not found`, {}, 404, false)
+    }
+  },
+  getSellerItems: async (req, res) => {
+    const { id } = req.data
+    const { searchKey, searchValue } = searching.name(req.query.search)
+    const { sortKey, sortBy } = sorting.name(req.query.sort)
+    const count = await itemsModel.countModel([searchKey, searchValue])
+    const page = paging(req, count[0].count)
+    const { offset, pageInfo } = page
+    const { limitData: limit } = pageInfo
+    const results = await itemsModel.getSellerModel([searchKey, searchValue, sortKey, sortBy], [id, limit, offset])
+    if (results.length) {
+      return responseStandard(res, 'List of Items', { results, pageInfo })
+    } else {
+      return responseStandard(res, 'There is no data in list', {}, 404, false)
+    }
+  },
+  detailSellerItems: async (req, res) => {
+    const { id } = req.params
+    const { id: sellerId } = req.data
+    const results = await itemsModel.detailModel([sellerId, id])
+    if (results.length) {
+      responseStandard(res, `Product with id ${id}`, { results })
+    } else {
+      responseStandard(res, `Product with id ${id} is not found`, {}, 404, false)
+    }
   }
 }

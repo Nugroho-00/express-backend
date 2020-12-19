@@ -1,16 +1,19 @@
-const jwt = require('jsonwebtoken')
 require('dotenv').config()
+const {
+  KEY_ADMIN,
+  KEY_SELLER,
+  KEY_CUSTOMER
+} = process.env
+const jwt = require('jsonwebtoken')
 const responseStandard = require('../helpers/response')
-const { SECRETKEY_ADMIN, SECRETKEY_SELLER, SECRETKEY_CUST } = process.env
 
 module.exports = {
-  authAdmin: (req, res, next) => {
+  Admin: (req, res, next) => {
     const { authorization } = req.headers
-
     if (authorization && authorization.startsWith('Bearer ')) {
       const token = authorization.slice(7, authorization.length)
       try {
-        const verify = jwt.verify(token, SECRETKEY_ADMIN)
+        const verify = jwt.verify(token, KEY_ADMIN)
         if (verify) {
           req.data = verify
           next()
@@ -24,13 +27,12 @@ module.exports = {
       return responseStandard(res, 'Forbidden Access', {}, 403, false)
     }
   },
-  authSeller: (req, res, next) => {
+  Seller: (req, res, next) => {
     const { authorization } = req.headers
-
     if (authorization && authorization.startsWith('Bearer ')) {
       const token = authorization.slice(7, authorization.length)
       try {
-        const verify = jwt.verify(token, SECRETKEY_SELLER)
+        const verify = jwt.verify(token, KEY_SELLER)
         if (verify) {
           req.data = verify
           next()
@@ -44,13 +46,12 @@ module.exports = {
       return responseStandard(res, 'Forbidden Access', {}, 403, false)
     }
   },
-  authCust: (req, res, next) => {
+  Customer: (req, res, next) => {
     const { authorization } = req.headers
-
     if (authorization && authorization.startsWith('Bearer ')) {
       const token = authorization.slice(7, authorization.length)
       try {
-        const verify = jwt.verify(token, SECRETKEY_CUST)
+        const verify = jwt.verify(token, KEY_CUSTOMER)
         if (verify) {
           req.data = verify
           next()

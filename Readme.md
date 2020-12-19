@@ -1,12 +1,11 @@
-<h1 align="center">Create Rest API - Express JS</h1>
+<h1 align="center"> Backend Rest API - Express Js & Node Js</h1>
 
-
-This is simple CRUD app with node js and framework express js, this app is wearing to e-commerce
+This is a simple Database Administrator application specially for backend only. Built with NodeJs using the ExpressJs Framework.
 Express.js is a web application framework for Node.js. [More about Express](https://en.wikipedia.org/wiki/Express.js)
 
 ## Built With
 [![Express.js](https://img.shields.io/badge/Express.js-4.x-orange.svg?style=rounded-square)](https://expressjs.com/en/starter/installing.html)
-[![Node.js](https://img.shields.io/badge/Node.js-v.10.16-green.svg?style=rounded-square)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-v.12.18.3-green.svg?style=rounded-square)](https://nodejs.org/)
 
 ## Requirements
 1. <a href="https://nodejs.org/en/download/">Node Js</a>
@@ -16,29 +15,39 @@ Express.js is a web application framework for Node.js. [More about Express](http
 
 ## How to run the app ?
 1. Open app's directory in CMD or Terminal
-2. Type `npm install`'
-3. Turn on Web Server and MySQL can using Third-party tool like xampp
-4. Create a database with the name ecommerce, and import file at folder sql ecom.sql to **phpmyadmin**
-5. Open Postman desktop application or Chrome web app extension that has installed before
-6. Choose HTTP Method and enter request url.(ex. localhost:8180/)
-7. You can see all the end point [here](#end-point)
+2. Type `npm install`
+3. Make new file a called **.env**, set up first [here](#set-up-env-file)
+4. Turn on Web Server and MySQL can using Third-party tool like xampp, etc.
+6. Open Postman desktop application or Chrome web app extension that has installed before
+7. Choose HTTP Method and enter request url.(ex. localhost:8080/)
+8. You can see all the end point [here](#end-point)
 
+## End Point
 
-## End Point Method
-**1. GET**
-* '/'
-     >Get All item produk
-* '/:id'
-    >Get item by Id produk
-**2. POST**
-* '/' 
-     >To Create items
-**3. PUT**
-* '/:id '
-    >Update all item by id
-**4. PATCH**
-* '/:id' 
-    >Update Partial item by id
-**5. DELETE**
-* '/:id'
-    >Delete item by id
+**1. POST**
+
+* `/items` (Add data to table items)
+
+**2. GET**
+
+* `/items`(Get  All items)
+
+* (Get All Items with fitur Search , Sort and Limit Pagination)
+
+**3. GET BY ID**
+
+* `/items/:id` (Get all detail on related id number)
+
+**5. PUT BY ID**
+
+* `/items/:id` (Update all column in items by id)
+  
+**4. PATCH BY ID**
+
+* `/items/:id` (Update specific column in items by id)
+
+**5. DELETE BY ID**
+
+* `/items/:id` (Delete items by id)
+
+  
